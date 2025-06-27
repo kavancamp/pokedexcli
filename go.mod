@@ -1,3 +1,3 @@
-module github.com/kavancamp/go_pokedex_cli
+module github.com/kavancamp/pokedexcli
 
 go 1.24.4
