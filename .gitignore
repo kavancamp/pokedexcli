@@ -30,4 +30,5 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
-go_pokedex_cli
+pokedexcli
+repl.log
