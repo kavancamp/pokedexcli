@@ -125,8 +125,21 @@ type config struct {
 	pokedex map[string]pokemonEntry
 }
 type pokemonEntry struct {
-	Name string `json:"name"`
-	BaseExperience int `json:"base_experience"`
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		BaseStat int `json:"base_stat"`
+		Stat     struct {
+			Name string `json:"name"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Type struct {
+			Name string `json:"name"`
+		} `json:"type"`
+	} `json:"types"`
 }
 
 type locationExploreResponse struct{
@@ -192,6 +205,43 @@ func commandCatch(cfg *config, args []string) error{
 	fmt.Printf("%s was caught!\n", p.Name)
 	return nil
 }
+func commandInspect(cfg *config, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: inspect <pokemon>")
+	}
+	name := strings.ToLower(args[0])
+
+	p, ok := cfg.pokedex[name]
+	if !ok {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Name: %s\n", p.Name)
+	fmt.Printf("Height: %d\n", p.Height)
+	fmt.Printf("Weight: %d\n", p.Weight)
+	fmt.Println("Stats:")
+	for _, stat := range p.Stats {
+		fmt.Printf(" -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, t := range p.Types {
+		fmt.Printf(" -%s\n", t.Type.Name)
+	}
+	return nil
+}
+func commandPokedex(cfg *config, args []string) error {
+	if len(cfg.pokedex) == 0 {
+		fmt.Println("You haven’t caught any Pokémon yet!")
+		return nil
+	}
+
+	fmt.Println("Your Pokémon:")
+	for name := range cfg.pokedex {
+		fmt.Printf("  - %s\n", name)
+	}
+	return nil
+}
 func cleanInput(text string) []string {
 	text = strings.TrimSpace(text)
 	text = strings.ToLower(text)
@@ -227,7 +277,7 @@ func main() {
 		},
 		"explore": {
 			name:        "explore",
-			description: "Explore Pokemon at given location",
+			description: "Explore Pokémon at given location",
 			callback:    commandMapPokemon,
 		},
 		"catch": {
@@ -235,12 +285,22 @@ func main() {
 			description: "Throw a Pokéball and try to catch a Pokémon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Show details about a caught Pokémon",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "List all Pokémon you've caught",
+			callback:    commandPokedex,
+		},
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Print("Pokedex > ")
+		fmt.Print("Pokédex > ")
 		if !scanner.Scan() {
 			break
 		}
