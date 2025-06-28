@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"io"
+	"math/rand"
 	"github.com/kavancamp/pokedexcli/internal/pokecache"
 )
 
@@ -121,6 +122,11 @@ type config struct {
 	next     string
 	previous string
 	cache    *pokecache.Cache
+	pokedex map[string]pokemonEntry
+}
+type pokemonEntry struct {
+	Name string `json:"name"`
+	BaseExperience int `json:"base_experience"`
 }
 
 type locationExploreResponse struct{
@@ -152,24 +158,39 @@ func commandMapPokemon(cfg *config, args []string) error {
 		fmt.Println("No Pokémon have been found in this area.")
 		return nil
 	}
-	fmt.Println("Exploring pastoria-city-area...")
+	//fmt.Println("Exploring pastoria-city-area...")
 	fmt.Printf("Found %d Pokémon in %s:\n", len(parsed.PokemonEncounters), area)
 	for _, encounter := range parsed.PokemonEncounters {
 		fmt.Println(" -", encounter.Pokemon.Name)		
 	}
 	return nil
 }
-func commandCatchPokemon(cfg *config, args []string) error{
+func commandCatch(cfg *config, args []string) error{
 	if len(args) < 1 {
-		return fmt.Errorf("usage: explore <location-area>")
+		return fmt.Errorf("usage: catch <pokemon-name>")
 	}
-	area := args[0]
-	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s/", area)
 	
+	selected_pokemon := strings.ToLower(args[0])
+	fmt.Printf("Throwing a Pokeball at %s...\n", selected_pokemon)
+
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s", selected_pokemon)
 	data, err := fetchWithCache(url, cfg.cache)
-	if err != nil {
-		return fmt.Errorf("failed to fetch location-area data: %v", err)
+	if err != nil{
+		return fmt.Errorf("failed to fetch Pokémon data: %v", err)
 	}
+	var p pokemonEntry
+	if err := json.Unmarshal(data, &p); err != nil {
+		return fmt.Errorf("failed to decode Pokémon data: %v", err)
+	}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	chance := r.Intn(p.BaseExperience + 1)
+	if chance > 50 {
+		fmt.Printf("%s escaped!\n", p.Name)
+		return nil
+	}
+	cfg.pokedex[p.Name] = p
+	fmt.Printf("%s was caught!\n", p.Name)
+	return nil
 }
 func cleanInput(text string) []string {
 	text = strings.TrimSpace(text)
@@ -179,7 +200,8 @@ func cleanInput(text string) []string {
 
 func main() {
 	cfg := &config{
-		cache: pokecache.NewCache(5 * time.Second),
+		cache:   pokecache.NewCache(5 * time.Second),
+		pokedex: make(map[string]pokemonEntry),
 	}
 
 	commandMap = map[string]cliCommand{
@@ -211,7 +233,7 @@ func main() {
 		"catch": {
 			name:        "catch",
 			description: "Throw a Pokéball and try to catch a Pokémon",
-			callback:    commandCatchPokemon,
+			callback:    commandCatch,
 		},
 	}
 
