@@ -5,7 +5,7 @@ Explore, catch, and inspect Pokémon using data from the [PokeAPI](https://pokea
 
 ## 📦 Features
 
-- 🧭 `map` / `mapb`: Paginate through Pokémon location areas  
+- 🧭 `map` / `mapb`: Paginate through Pokémon location areas (use `map 10` or whichever int you need to see, default is 5)
 - 🔍 `explore <area>`: Show Pokémon in a location area  
 - 🎯 `catch <pokemon>`: Attempt to catch a Pokémon  
 - 📜 `inspect <pokemon>`: View stats, types, height/weight of caught Pokémon  
@@ -34,7 +34,7 @@ Pokedex > map
 Pokedex > explore route-1
 Pokedex > catch pikachu
 Pokedex > inspect pikachu
-Pokedex > list
+Pokedex > pokedex
 Pokedex > exit
 </pre>
 
