@@ -145,8 +145,6 @@ func fetchWithCache(url string, cache *pokecache.Cache) ([]byte, error) {
 type config struct {
 	offset int
 	limit int
-	// next     string
-	// previous string
 	cache    *pokecache.Cache
 	pokedex map[string]pokemonEntry
 }
@@ -210,13 +208,18 @@ func commandCatch(cfg *config, args []string) error{
 	}
 	
 	selected_pokemon := strings.ToLower(args[0])
-	fmt.Printf("Throwing a Pokeball at %s...\n", selected_pokemon)
+	
 
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s", selected_pokemon)
+
 	data, err := fetchWithCache(url, cfg.cache)
-	if err != nil{
+	if err != nil {
+		if strings.Contains(err.Error(), "404") {
+			return fmt.Errorf("no such Pokémon named '%s'", selected_pokemon)
+		}
 		return fmt.Errorf("failed to fetch Pokémon data: %v", err)
 	}
+	fmt.Printf("Throwing a Pokeball at %s...\n", selected_pokemon)
 	var p pokemonEntry
 	if err := json.Unmarshal(data, &p); err != nil {
 		return fmt.Errorf("failed to decode Pokémon data: %v", err)
