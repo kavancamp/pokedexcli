@@ -15,7 +15,8 @@ Explore, catch, and inspect Pokémon using data from the [PokeAPI](https://pokea
 - 🚪 `exit`: Quit the app
 
 ## 🎥 Demo
-[![asciicast](https://asciinema.org/a/bI2XLFwwg5OhJnkWGCZK1947Y.svg)](https://asciinema.org/a/bI2XLFwwg5OhJnkWGCZK1947Y)
+ ![](demoPokeGif.gif)
+
 
 ## 🛠️ Installation
 
