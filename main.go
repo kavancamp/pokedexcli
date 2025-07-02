@@ -94,11 +94,9 @@ func commandMapBack(cfg *config, args []string) error {
 
 func fetchWithCache(url string, cache *pokecache.Cache) ([]byte, error) {
 	if val, ok := cache.Get(url); ok {
-		fmt.Println("🔁 Cache hit:", url)
 		return val, nil
 	}
 
-	//fmt.Println("🌐 Fetching from API:", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("http.Get failed: %v", err)
