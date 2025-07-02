@@ -10,6 +10,7 @@ import (
 	"time"
 	"io"
 	"math/rand"
+	"strconv"
 	"github.com/kavancamp/pokedexcli/internal/pokecache"
 )
 
@@ -43,10 +44,56 @@ type locationAreaResponse struct {
 }
 
 func commandMapExplore(cfg *config, args []string) error {
-	url := cfg.next
-	if url == "" {
-		url = "https://pokeapi.co/api/v2/location-area?offset=0&limit=20"
+	// Allow custom limit from args
+	if len(args) > 0 {
+		if newLimit, err := strconv.Atoi(args[0]); err == nil && newLimit > 0 {
+			cfg.limit = newLimit
+		}
 	}
+
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area?offset=%d&limit=%d", cfg.offset, cfg.limit)
+
+	data, err := fetchWithCache(url, cfg.cache)
+	if err != nil {
+		return err
+	}
+
+	var result locationAreaResponse
+	if err := json.Unmarshal(data, &result); err != nil {
+		return fmt.Errorf("failed to decode JSON: %v", err)
+	}
+	if len(result.Results) == 0 {
+		fmt.Println("No more locations.")
+		return nil
+	}
+	for _, loc := range result.Results {
+		fmt.Println(loc.Name)
+	}
+	cfg.offset += cfg.limit
+	// cfg.next = result.Next
+	// cfg.previous = result.Previous
+	return nil
+}
+
+func commandMapBack(cfg *config, args []string) error {
+	// Optional: allow new limit for going back
+	if len(args) > 0 {
+		if newLimit, err := strconv.Atoi(args[0]); err == nil && newLimit > 0 {
+			cfg.limit = newLimit
+		}
+	}
+
+	if cfg.offset == 0 {
+		fmt.Println("You're already at the beginning")
+		return nil
+	}
+
+	cfg.offset -= cfg.limit
+	if cfg.offset < 0 {
+		cfg.offset = 0
+	}
+
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area?offset=%d&limit=%d", cfg.offset, cfg.limit)
 
 	data, err := fetchWithCache(url, cfg.cache)
 	if err != nil {
@@ -58,39 +105,18 @@ func commandMapExplore(cfg *config, args []string) error {
 		return fmt.Errorf("failed to decode JSON: %v", err)
 	}
 
-	for _, loc := range result.Results {
-		fmt.Println(loc.Name)
-	}
-
-	cfg.next = result.Next
-	cfg.previous = result.Previous
-	return nil
-}
-
-func commandMapBack(cfg *config, args []string) error {
-	if cfg.previous == "" {
-		fmt.Println("You're already at the beginning")
+	if len(result.Results) == 0 {
+		fmt.Println("No locations found.")
 		return nil
 	}
 
-	data, err := fetchWithCache(cfg.previous, cfg.cache)
-	if err != nil {
-		return err
-	}
-
-	var result locationAreaResponse
-	if err := json.Unmarshal(data, &result); err != nil {
-		return fmt.Errorf("failed to decode JSON: %v", err)
-	}
-
 	for _, loc := range result.Results {
 		fmt.Println(loc.Name)
 	}
 
-	cfg.next = result.Next
-	cfg.previous = result.Previous
 	return nil
 }
+
 
 func fetchWithCache(url string, cache *pokecache.Cache) ([]byte, error) {
 	if val, ok := cache.Get(url); ok {
@@ -117,8 +143,10 @@ func fetchWithCache(url string, cache *pokecache.Cache) ([]byte, error) {
 }
 
 type config struct {
-	next     string
-	previous string
+	offset int
+	limit int
+	// next     string
+	// previous string
 	cache    *pokecache.Cache
 	pokedex map[string]pokemonEntry
 }
@@ -248,6 +276,8 @@ func cleanInput(text string) []string {
 
 func main() {
 	cfg := &config{
+		offset: 0,
+		limit: 5, //default
 		cache:   pokecache.NewCache(5 * time.Second),
 		pokedex: make(map[string]pokemonEntry),
 	}
@@ -265,7 +295,7 @@ func main() {
 		},
 		"map": {
 			name:        "map",
-			description: "Explore the Pokémon world by listing location areas",
+			description: "Explore the Pokémon world by listing location areas (default: 5)",
 			callback:    commandMapExplore,
 		},
 		"mapb": {
